@@ -18,9 +18,7 @@ const uri='mongodb+srv://AuthProduct:eAiucg9T8yfxQSFa@cluster0.ifzch.mongodb.net
 const connectToDatabase = async () => {
     try{
         await mongoose.connect(uri,{
-            useCreateIndex: true,
                 useUnifiedTopology: true,
-                useFindAndModify: false,
             useNewUrlParser: true
         })
         console.log("MongoDB is connected");
@@ -439,20 +437,20 @@ const abiArray = [
 
  const address = '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae';
 
-// // Create a new contract instance that we can interact with
-// const contractInstance = new Web3.eth.contract(abiArray, address,{
-// 	from: '0x1234567890123456789012345678901234567891', // default from address
-// 	gasPrice: '20000000000' // default gas price in wei, 20 gwei in this case
-// });
-// //default account
-// const defaultAccount = web3.eth.Contract.defaultAccount
+// Create a new contract instance that we can interact with
+var contractInstance = new web3s.eth.contract(abiArray, address,{
+	from: '0x1234567890123456789012345678901234567891', // default from address
+	gasPrice: '20000000000' // default gas price in wei, 20 gwei in this case
+});
+//default account
+const defaultAccount = web3s.eth.contract.defaultAccount
 
 
 
-const contract = web3s.eth.contract(abiArray);
+// const contract = web3s.eth.contract(abiArray);
 
-const contractInstance = contract.at(address);
-web3s.eth.defaultAccount = web3s.eth.coinbase;
+// const contractInstance = contract.at(address);
+// web3s.eth.defaultAccount = web3s.eth.coinbase;
 
 // This function generates a QR code
 function generateQRCode() {
