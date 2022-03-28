@@ -85,7 +85,7 @@ async function deploy (){
 //   console.log(`Old data value: ${await myContract.methods.data().call()}`);
 //   const receipt = await myContract.methods.setData(7).send({ from: address });
 //   console.log(receipt.transactionHash);
-  console.log(await myContract.methods.getRetailer("5dbe1ec5dfc0c896881e78ecd1f07882").call((err, val) => { console.log({ err, val })}));
+//   console.log(await myContract.methods.getRetailer("5dbe1ec5dfc0c896881e78ecd1f07882").call((err, val) => { console.log({ err, val })}));
     return myContract;
   };
   deploy();
@@ -616,8 +616,8 @@ app.post('/QRCodeForManufacturer',async (req, res) => {
     manufacturerTimestamp = manufacturerTimestamp.toISOString().slice(0, 10);
     let salt = crypto.randomBytes(20).toString('hex');
     let code = hashMD5(brand + model + status + description + manufacturerName + manufacturerLocation + salt);
-    let ok = await myContract.methods.createCode(code, brand, model, status, description, manufacturerName, manufacturerLocation,
-                                        manufacturerTimestamp, { from: web3.eth.accounts[0], gas: 3000000 });
+    let ok = await myContract.methods.createCode(code,status ,brand, model, description, manufacturerName, manufacturerLocation,
+                                        manufacturerTimestamp).send({from: address, gas: 3000000});
     console.log(`Brand: ${brand} \n`);
     if (!ok) {
         return res.status(400).send('ERROR! QR Code for manufacturer could not be generated.');
