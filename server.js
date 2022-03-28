@@ -1,15 +1,23 @@
 const express = require('express');
 const app = express();
 // const session = require('express-session');
+const path = require('path');
+const solc = require('solc');
+const Provider = require('@truffle/hdwallet-provider');
 const bcrypt = require('bcryptjs');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
-const Web3 = require('web3');
+var Web3 = require('web3');
 const BigNumber = require('bignumber.js');
 const fs = require('fs');
 const mongoose = require('mongoose');
 const UserSchema=require('./schemas/user');
 const RetailerSchema=require('./schemas/retailer');
+const pathToContract="./contracts/block.sol";
+const address="0xA33677B171F5e419884505e9e4e67165EcF0C9Fc";
+const privatekey="exchange cabbage someone alley vague short village toss recall visa corn gold";
+const infuraURL="https://rinkeby.infura.io/v3/4ab70f9d52854f799be42c232951a760"
+
 
 
 //connect to mongoDB
@@ -30,437 +38,62 @@ const connectToDatabase = async () => {
 }
 connectToDatabase();
 
-
-// Secret ID for session
-const secret_id = process.env.secret;
-
-// Salt for hashing
-
-// IP and port
-const IP = 'localhost';
 const port = process.env.PORT || 8080;
 
-// View engine
-// app.set('views', path.join(__dirname, 'views'));
-// app.set('view engine', 'ejs');
-
-// Body-parser Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({
     extended: true
 }));
 
-// Express session Middleware
-// app.use(session({
-//     secret: secret_id,
-//     saveUninitialized: true,
-//     resave: true
-// }));
+const content = fs.readFileSync(pathToContract, 'utf8');
 
-// // MySQL Connection
-// const connection = mysql.createConnection({
-//     host: IP,
-//     user: process.env.database_user,
-//     password: process.env.database_password,
-//     database: 'authentifi'
-// });
+const input = {
+  language: 'Solidity',
+  sources: {
+    'contract': { content }
+  },
+  settings: {
+    outputSelection: { '*': { '*': ['*'] } }
+  }
+};
 
-// connection.connect(function(err) {
-//     if (!err) {
-//         console.log('Connected to MySql!\n');
-//     } else {
-//         console.log('Not connected to MySql.\n');
-//     }
-// });
+const provider = new Provider(privatekey, infuraURL );
+var web3 = new Web3(provider);
+var myContract;
 
-// Web3 connection
-const web3s = new Web3(Web3.givenProvider || "ws://localhost:8546");
-console.log(`Talking with a geth server ${web3s.version.api} \n`);
-
-const abiArray = [
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "_code",
-				"type": "string"
-			},
-			{
-				"name": "_hashedEmailRetailer",
-				"type": "string"
-			}
-		],
-		"name": "addRetailerToCode",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"payable": true,
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "_code",
-				"type": "string"
-			},
-			{
-				"name": "_oldCustomer",
-				"type": "string"
-			},
-			{
-				"name": "_newCustomer",
-				"type": "string"
-			}
-		],
-		"name": "changeOwner",
-		"outputs": [
-			{
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"payable": true,
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "_code",
-				"type": "string"
-			},
-			{
-				"name": "_brand",
-				"type": "string"
-			},
-			{
-				"name": "_model",
-				"type": "string"
-			},
-			{
-				"name": "_status",
-				"type": "uint256"
-			},
-			{
-				"name": "_description",
-				"type": "string"
-			},
-			{
-				"name": "_manufactuerName",
-				"type": "string"
-			},
-			{
-				"name": "_manufactuerLocation",
-				"type": "string"
-			},
-			{
-				"name": "_manufactuerTimestamp",
-				"type": "string"
-			}
-		],
-		"name": "createCode",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"payable": true,
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "_hashedEmail",
-				"type": "string"
-			},
-			{
-				"name": "_name",
-				"type": "string"
-			},
-			{
-				"name": "_phone",
-				"type": "string"
-			}
-		],
-		"name": "createCustomer",
-		"outputs": [
-			{
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"payable": true,
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [],
-		"name": "createOwner",
-		"outputs": [],
-		"payable": false,
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "_hashedEmail",
-				"type": "string"
-			},
-			{
-				"name": "_retailerName",
-				"type": "string"
-			},
-			{
-				"name": "_retailerLocation",
-				"type": "string"
-			}
-		],
-		"name": "createRetailer",
-		"outputs": [
-			{
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"payable": true,
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "_code",
-				"type": "string"
-			},
-			{
-				"name": "_retailer",
-				"type": "string"
-			},
-			{
-				"name": "_customer",
-				"type": "string"
-			}
-		],
-		"name": "initialOwner",
-		"outputs": [
-			{
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"payable": true,
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"constant": false,
-		"inputs": [
-			{
-				"name": "_code",
-				"type": "string"
-			},
-			{
-				"name": "_customer",
-				"type": "string"
-			}
-		],
-		"name": "reportStolen",
-		"outputs": [
-			{
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"payable": true,
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "_customer",
-				"type": "string"
-			}
-		],
-		"name": "getCodes",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string[]"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "_code",
-				"type": "string"
-			}
-		],
-		"name": "getCustomerDetails",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			},
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "_code",
-				"type": "string"
-			}
-		],
-		"name": "getNotOwnedCodeDetails",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			},
-			{
-				"name": "",
-				"type": "string"
-			},
-			{
-				"name": "",
-				"type": "uint256"
-			},
-			{
-				"name": "",
-				"type": "string"
-			},
-			{
-				"name": "",
-				"type": "string"
-			},
-			{
-				"name": "",
-				"type": "string"
-			},
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "_code",
-				"type": "string"
-			}
-		],
-		"name": "getOwnedCodeDetails",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			},
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [
-			{
-				"name": "_code",
-				"type": "string"
-			}
-		],
-		"name": "getretailerDetails",
-		"outputs": [
-			{
-				"name": "",
-				"type": "string"
-			},
-			{
-				"name": "",
-				"type": "string"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"constant": true,
-		"inputs": [],
-		"name": "whoIsOwner",
-		"outputs": [
-			{
-				"name": "",
-				"type": "address"
-			}
-		],
-		"payable": false,
-		"stateMutability": "view",
-		"type": "function"
-	}
-];
-
- const address = '0xde0b295669a9fd93d5f28d9ec85e40f4cb697bae';
-
-// Create a new contract instance that we can interact with
-var contractInstance = new web3s.eth.contract(abiArray, address,{
-	from: '0x1234567890123456789012345678901234567891', // default from address
-	gasPrice: '20000000000' // default gas price in wei, 20 gwei in this case
-});
-//default account
-const defaultAccount = web3s.eth.contract.defaultAccount
-
-
-
-// const contract = web3s.eth.contract(abiArray);
-
-// const contractInstance = contract.at(address);
-// web3s.eth.defaultAccount = web3s.eth.coinbase;
+async function deploy (){
+    console.log("Deploying Smart Contract!");
+    /* 1. Get Ethereum Account */
+    const [account] = await web3.eth.getAccounts();
+    console.log("Account: ", account);
+    /* 2. Compile Smart Contract */
+    const {contracts} = JSON.parse(
+      solc.compile(JSON.stringify(input))
+    );
+  
+    const contract = contracts['contract'].MyContract;
+  
+    /* 2. Extract Abi And Bytecode From Contract */
+    const abi = contract.abi;
+    const bytecode = contract.evm.bytecode.object;
+  
+    /* 3. Send Smart Contract To Blockchain */
+    var myContract= await new web3.eth.Contract(abi,address).deploy({data: bytecode})
+  
+    console.log("Contract", myContract);
+    // console.log(await myContract._parent.methods.data().call());
+//   console.log(`Old data value: ${await myContract.methods.data().call()}`);
+  const receipt = await myContract._parent.methods.setData(6).send({ from: address });
+  console.log(receipt.transactionHash);
+  console.log(await myContract._parent.methods.data().call((err, val) => { console.log({ err, val })}));
+    return myContract;
+  };
+  deploy();
 
 // This function generates a QR code
 function generateQRCode() {
     return crypto.randomBytes(20).toString('hex');
 }
-
-// // Hash password using bcrypt
-// function hashBcrypt(password) {
-//     return bcrypt.hash(password, saltRounds);
-// }
 
 // Hash email using md5
 function hashMD5(email) {
@@ -533,7 +166,7 @@ catch(err){
 
 // Add the user in Blockchain
 function createCustomer(hashedEmail, name, phone) {
-    return contractInstance.createCustomer(hashedEmail, name, phone, { from: web3.eth.accounts[0], gas: 3000000 });
+    return myContract.methods.createCustomer(hashedEmail, name, phone).send({from: address, gas: 3000000});
 }
 
 
@@ -614,9 +247,9 @@ app.post('/retailerSignup',async (req, res) => {
 });
 
 // Add retailer to Blockchain
-function createRetailer(retailerHashedEmail, retailerName, retailerLocation) {
-    return contractInstance.createRetailer(retailerHashedEmail, retailerName, retailerLocation,
-                                        { from: web3.eth.accounts[0], gas: 3000000 });
+async function createRetailer(retailerHashedEmail, retailerName, retailerLocation) {
+    var myContract=await deploy();
+    return await myContract._parent.methods.createRetailer(retailerHashedEmail, retailerName, retailerLocation).send({from: address, gas: 3000000});
 }
 
 
@@ -685,7 +318,7 @@ app.post('/addRetailerToCode', (req, res) => {
     let retailerEmail = req.body.email;
     let hashedEmail = hashMD5(retailerEmail);
     console.log(`retailerEmail: ${retailerEmail}, hashed email: ${hashedEmail} \n`);
-    let ok = contractInstance.addRetailerToCode(code, hashedEmail);
+    let ok = myContract.methods.addRetailerToCode(code, hashedEmail);
     if(!ok) {
         return res.status(400).send('Error');
     }
@@ -706,12 +339,12 @@ app.post('/myAssets', (req, res) => {
     let myAssetsArray = [];
     let email = req.body.email;
     let hashedEmail = hashMD5(email);
-    let arrayOfCodes = contractInstance.getCodes(hashedEmail);
+    let arrayOfCodes = myContract.methods.getCodes(hashedEmail);
     console.log(`Email ${email}`);
     console.log(`Customer has these product codes: ${arrayOfCodes} \n`);
     for (code in arrayOfCodes) {
-        let ownedCodeDetails = contractInstance.getOwnedCodeDetails(arrayOfCodes[code]);
-        let notOwnedCodeDetails = contractInstance.getNotOwnedCodeDetails(arrayOfCodes[code]);
+        let ownedCodeDetails = myContract.methods.getOwnedCodeDetails(arrayOfCodes[code]);
+        let notOwnedCodeDetails = myContract.methods.getNotOwnedCodeDetails(arrayOfCodes[code]);
         myAssetsArray.push({
             'code': arrayOfCodes[code], 'brand': notOwnedCodeDetails[0],
             'model': notOwnedCodeDetails[1], 'description': notOwnedCodeDetails[2],
@@ -737,7 +370,7 @@ app.post('/stolen', (req, res) => {
     let email = req.body.email;
     let hashedEmail = hashMD5(email);
     console.log(`Email: ${email} \n`);
-    let ok = contractInstance.reportStolen(code, hashedEmail);
+    let ok = myContract.methods.reportStolen(code, hashedEmail);
     if (!ok) {
         console.log(`ERROR! Code: ${code} status could not be changed.\n`);
         return res.status(400).send('ERROR! Product status could not be changed.');
@@ -821,8 +454,8 @@ app.post('/getProductDetails', (req, res) => {
             let timeElapsed = Math.floor((currentTime - QRCodes[i]['currentTime']) / 1000);
             // QR Codes are valid only for 600 secs
             if (timeElapsed <= 600) {
-                let ownedCodeDetails = contractInstance.getOwnedCodeDetails(code);
-                let notOwnedCodeDetails = contractInstance.getNotOwnedCodeDetails(code);
+                let ownedCodeDetails = myContract.methods.getOwnedCodeDetails(code);
+                let notOwnedCodeDetails = myContract.methods.getNotOwnedCodeDetails(code);
                 if (!ownedCodeDetails || !notOwnedCodeDetails) {
                     return res.status(400).send('Could not retrieve product details.');
                 }
@@ -902,11 +535,11 @@ app.post('/buyerConfirm', (req, res) => {
                     var ok;
                     if(QRCodes[i]['retailer'] === '1'){
                         console.log('Performing transaction for retailer\n');
-                        ok = contractInstance.initialOwner(code, hashedSellerEmail, hashedBuyerEmail,
+                        ok = myContract.methods.initialOwner(code, hashedSellerEmail, hashedBuyerEmail,
                                                         { from: web3.eth.accounts[0], gas: 3000000 });
                     } else {
                         console.log('Performing transaction for customer\n');
-                        ok = contractInstance.changeOwner(code, hashedSellerEmail, hashedBuyerEmail,
+                        ok = myContract.methods.changeOwner(code, hashedSellerEmail, hashedBuyerEmail,
                                                         { from: web3.eth.accounts[0], gas: 3000000 });
                     }
                     if (!ok) {
@@ -926,13 +559,13 @@ app.post('/buyerConfirm', (req, res) => {
 
 // Function that creates an initial owner for a product
 function initialOwner(code, retailerHashedEmail, customerHashedEmail) {
-    return contractInstance.initialOwner(code, retailerHashedEmail, customerHashedEmail,
+    return myContract.methods.initialOwner(code, retailerHashedEmail, customerHashedEmail,
                                         { from: web3.eth.accounts[0], gas: 3000000 });
 }
 
 // Function that creates transfers ownership of a product
 function changeOwner(code, oldOwnerHashedEmail, newOwnerHashedEmail) {
-    return contractInstance.changeOwner(code, oldOwnerHashedEmail, newOwnerHashedEmail,
+    return myContract.methods.changeOwner(code, oldOwnerHashedEmail, newOwnerHashedEmail,
                                         { from: web3.eth.accounts[0], gas: 3000000 });
 }
 
@@ -946,7 +579,7 @@ function changeOwner(code, oldOwnerHashedEmail, newOwnerHashedEmail) {
 app.post('/scan', (req, res) => {
     console.log('Request made to /scan\n');
     let code = req.body.code;
-    let productDetails = contractInstance.getNotOwnedCodeDetails(code);
+    let productDetails = myContract.methods.getNotOwnedCodeDetails(code);
     let productDetailsObj = {
         'name': productDetails[0], 'model': productDetails[1], 'status': productDetails[2],
         'description': productDetails[3], 'manufacturerName': productDetails[4],
@@ -975,7 +608,7 @@ app.post('/QRCodeForManufacturer', (req, res) => {
     manufacturerTimestamp = manufacturerTimestamp.toISOString().slice(0, 10);
     let salt = crypto.randomBytes(20).toString('hex');
     let code = hashMD5(brand + model + status + description + manufacturerName + manufacturerLocation + salt);
-    let ok = contractInstance.createCode(code, brand, model, status, description, manufacturerName, manufacturerLocation,
+    let ok = myContract.methods.createCode(code, brand, model, status, description, manufacturerName, manufacturerLocation,
                                         manufacturerTimestamp, { from: web3.eth.accounts[0], gas: 3000000 });
     console.log(`Brand: ${brand} \n`);
     if (!ok) {
@@ -1003,7 +636,7 @@ app.get('/getCustomerDetails', (req, res) => {
     console.log('Request to /getCustomerDetails\n');
     let email = req.body.email;
     let hashedEmail = hash(email);
-    let customerDetails = contractInstance.getCustomerDetails(hashedEmail);
+    let customerDetails = myContract.methods.getCustomerDetails(hashedEmail);
     console.log(`Email: ${email} \n`);
     let customerDetailsObj = {
         'name': customerDetails[0], 'phone': customerDetails[1]

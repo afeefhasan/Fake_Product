@@ -4,6 +4,15 @@ pragma experimental ABIEncoderV2;
 contract MyContract {
   address public owner;
 //   create a customer object
+uint public data;
+  function date() public view returns (uint) {
+    return data;
+  }
+
+  function setData(uint _data) external {
+    data = _data;
+ 
+  }
 
     struct Customer {
         string name;
