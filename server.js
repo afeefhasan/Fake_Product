@@ -78,12 +78,12 @@ async function deploy (){
     const bytecode = contract.evm.bytecode.object;
   
     /* 3. Send Smart Contract To Blockchain */
-    var myContract= await new web3.eth.Contract(abi,address).deploy({data: bytecode})
+    var myContract= await new web3.eth.Contract(abi,address)
   
     console.log("Contract", myContract);
     // console.log(await myContract._parent.methods.data().call());
 //   console.log(`Old data value: ${await myContract.methods.data().call()}`);
-  const receipt = await myContract._parent.methods.setData(6).send({ from: address });
+  const receipt = await myContract._parent.methods.setData(7).send({ from: address });
   console.log(receipt.transactionHash);
   console.log(await myContract._parent.methods.data().call((err, val) => { console.log({ err, val })}));
     return myContract;
