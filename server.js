@@ -81,11 +81,11 @@ async function deploy (){
     var myContract= await new web3.eth.Contract(abi,address)
   
     console.log("Contract", myContract);
-    // console.log(await myContract._parent.methods.data().call());
+    // console.log(await myContract.methods.data().call());
 //   console.log(`Old data value: ${await myContract.methods.data().call()}`);
-  const receipt = await myContract._parent.methods.setData(7).send({ from: address });
-  console.log(receipt.transactionHash);
-  console.log(await myContract._parent.methods.data().call((err, val) => { console.log({ err, val })}));
+//   const receipt = await myContract.methods.setData(7).send({ from: address });
+//   console.log(receipt.transactionHash);
+  console.log(await myContract.methods.getRetailer("5dbe1ec5dfc0c896881e78ecd1f07882").call((err, val) => { console.log({ err, val })}));
     return myContract;
   };
   deploy();
@@ -166,7 +166,7 @@ catch(err){
 
 // Add the user in Blockchain
 function createCustomer(hashedEmail, name, phone) {
-    return myContract._parent.methods.createCustomer(hashedEmail, name, phone).send({from: address, gas: 3000000});
+    return myContract.methods.createCustomer(hashedEmail, name, phone).send({from: address, gas: 3000000});
 }
 
 
@@ -249,7 +249,7 @@ app.post('/retailerSignup',async (req, res) => {
 // Add retailer to Blockchain
 async function createRetailer(retailerHashedEmail, retailerName, retailerLocation) {
     var myContract=await deploy();
-    return await myContract._parent.methods.createRetailer(retailerHashedEmail, retailerName, retailerLocation).send({from: address, gas: 3000000});
+    return await myContract.methods.createRetailer(retailerHashedEmail, retailerName, retailerLocation).send({from: address, gas: 3000000});
 }
 
 
@@ -319,7 +319,7 @@ app.post('/addRetailerToCode', async(req, res) => {
     let retailerEmail = req.body.email;
     let hashedEmail = hashMD5(retailerEmail);
     console.log(`retailerEmail: ${retailerEmail}, hashed email: ${hashedEmail} \n`);
-    let ok =await  myContract._parent.methods.addRetailerToCode(code, hashedEmail);
+    let ok =await  myContract.methods.addRetailerToCode(code, hashedEmail);
     if(!ok) {
         return res.status(400).send('Error');
     }
@@ -341,12 +341,12 @@ app.post('/myAssets', async(req, res) => {
     let myAssetsArray = [];
     let email = req.body.email;
     let hashedEmail = hashMD5(email);
-    let arrayOfCodes = await myContract._parent.methods.getCodes(hashedEmail);
+    let arrayOfCodes = await myContract.methods.getCodes(hashedEmail);
     console.log(`Email ${email}`);
     console.log(`Customer has these product codes: ${arrayOfCodes} \n`);
     for (code in arrayOfCodes) {
-        let ownedCodeDetails = await myContract._parent.methods.getOwnedCodeDetails(arrayOfCodes[code]);
-        let notOwnedCodeDetails =await myContract._parent.methods.getNotOwnedCodeDetails(arrayOfCodes[code]);
+        let ownedCodeDetails = await myContract.methods.getOwnedCodeDetails(arrayOfCodes[code]);
+        let notOwnedCodeDetails =await myContract.methods.getNotOwnedCodeDetails(arrayOfCodes[code]);
         myAssetsArray.push({
             'code': arrayOfCodes[code], 'brand': notOwnedCodeDetails[0],
             'model': notOwnedCodeDetails[1], 'description': notOwnedCodeDetails[2],
@@ -373,7 +373,7 @@ app.post('/stolen',async (req, res) => {
     let email = req.body.email;
     let hashedEmail = hashMD5(email);
     console.log(`Email: ${email} \n`);
-    let ok =await myContract._parent.methods.reportStolen(code, hashedEmail);
+    let ok =await myContract.methods.reportStolen(code, hashedEmail);
     if (!ok) {
         console.log(`ERROR! Code: ${code} status could not be changed.\n`);
         return res.status(400).send('ERROR! Product status could not be changed.');
@@ -458,8 +458,8 @@ app.post('/getProductDetails',async (req, res) => {
             let timeElapsed = Math.floor((currentTime - QRCodes[i]['currentTime']) / 1000);
             // QR Codes are valid only for 600 secs
             if (timeElapsed <= 600) {
-                let ownedCodeDetails =await  myContract._parent.methods.getOwnedCodeDetails(code);
-                let notOwnedCodeDetails =await myContract._parent.methods.getNotOwnedCodeDetails(code);
+                let ownedCodeDetails =await  myContract.methods.getOwnedCodeDetails(code);
+                let notOwnedCodeDetails =await myContract.methods.getNotOwnedCodeDetails(code);
                 if (!ownedCodeDetails || !notOwnedCodeDetails) {
                     return res.status(400).send('Could not retrieve product details.');
                 }
@@ -541,11 +541,11 @@ app.post('/buyerConfirm',async (req, res) => {
                     var ok;
                     if(QRCodes[i]['retailer'] === '1'){
                         console.log('Performing transaction for retailer\n');
-                        ok =await myContract._parent.methods.initialOwner(code, hashedSellerEmail, hashedBuyerEmail,
+                        ok =await myContract.methods.initialOwner(code, hashedSellerEmail, hashedBuyerEmail,
                                                         { from: web3.eth.accounts[0], gas: 3000000 });
                     } else {
                         console.log('Performing transaction for customer\n');
-                        ok =await  myContract._parent.methods.changeOwner(code, hashedSellerEmail, hashedBuyerEmail,
+                        ok =await  myContract.methods.changeOwner(code, hashedSellerEmail, hashedBuyerEmail,
                                                         { from: web3.eth.accounts[0], gas: 3000000 });
                     }
                     if (!ok) {
@@ -586,7 +586,7 @@ app.post('/scan',async (req, res) => {
     var myContract=await deploy();
     console.log('Request made to /scan\n');
     let code = req.body.code;
-    let productDetails = await myContract._parent.methods.getNotOwnedCodeDetails(code);
+    let productDetails = await myContract.methods.getNotOwnedCodeDetails(code);
     let productDetailsObj = {
         'name': productDetails[0], 'model': productDetails[1], 'status': productDetails[2],
         'description': productDetails[3], 'manufacturerName': productDetails[4],
@@ -616,7 +616,7 @@ app.post('/QRCodeForManufacturer',async (req, res) => {
     manufacturerTimestamp = manufacturerTimestamp.toISOString().slice(0, 10);
     let salt = crypto.randomBytes(20).toString('hex');
     let code = hashMD5(brand + model + status + description + manufacturerName + manufacturerLocation + salt);
-    let ok = await myContract._parent.methods.createCode(code, brand, model, status, description, manufacturerName, manufacturerLocation,
+    let ok = await myContract.methods.createCode(code, brand, model, status, description, manufacturerName, manufacturerLocation,
                                         manufacturerTimestamp, { from: web3.eth.accounts[0], gas: 3000000 });
     console.log(`Brand: ${brand} \n`);
     if (!ok) {
@@ -645,7 +645,7 @@ app.get('/getCustomerDetails', async(req, res) => {
     var myContract=await deploy();
     let email = req.body.email;
     let hashedEmail = hash(email);
-    let customerDetails =await  myContract._parent.methods.getCustomerDetails(hashedEmail);
+    let customerDetails =await  myContract.methods.getCustomerDetails(hashedEmail);
     console.log(`Email: ${email} \n`);
     let customerDetailsObj = {
         'name': customerDetails[0], 'phone': customerDetails[1]

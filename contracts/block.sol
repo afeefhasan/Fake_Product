@@ -70,6 +70,9 @@ uint public data;
         return true;
 
     }
+    function getRetailer(string memory _hashedEmail) public view returns (string memory) {
+        return retailerArr[_hashedEmail].name;
+    }
 
     //function to create a QR code
     function createCode(string memory _code, uint  _status , string memory _brand, string memory _model, string memory _description, string memory _manufactuerName, string memory _manufactuerLocation, string memory _manufactuerTimestamp) public payable returns (bool) {
