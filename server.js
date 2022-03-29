@@ -17,7 +17,7 @@ const pathToContract="./contracts/block.sol";
 const address="0xA33677B171F5e419884505e9e4e67165EcF0C9Fc";
 const privatekey="exchange cabbage someone alley vague short village toss recall visa corn gold";
 const infuraURL="https://rinkeby.infura.io/v3/4ab70f9d52854f799be42c232951a760"
-
+const MyContract = require('./build/contracts/MyContract.json');
 
 
 //connect to mongoDB
@@ -63,29 +63,17 @@ var myContract;
 
 async function deploy (){
     console.log("Deploying Smart Contract!");
-    /* 1. Get Ethereum Account */
-    const [account] = await web3.eth.getAccounts();
-    console.log("Account: ", account);
-    /* 2. Compile Smart Contract */
-    const {contracts} = JSON.parse(
-      solc.compile(JSON.stringify(input))
+    const networkId = await web3.eth.net.getId();
+    const myContract = new web3.eth.Contract(
+      MyContract.abi,
+      MyContract.networks[networkId].address
     );
   
-    const contract = contracts['contract'].MyContract;
   
-    /* 2. Extract Abi And Bytecode From Contract */
-    const abi = contract.abi;
-    const bytecode = contract.evm.bytecode.object;
-  
-    /* 3. Send Smart Contract To Blockchain */
-    var myContract= await new web3.eth.Contract(abi,address)
-  
-    console.log("Contract", myContract);
-    // console.log(await myContract.methods.data().call());
-//   console.log(`Old data value: ${await myContract.methods.data().call()}`);
-//   const receipt = await myContract.methods.setData(7).send({ from: address });
-//   console.log(receipt.transactionHash);
-//   console.log(await myContract.methods.getRetailer("5dbe1ec5dfc0c896881e78ecd1f07882").call((err, val) => { console.log({ err, val })}));
+    // console.log(`Old data value: ${await myContract.methods.data().call()}`);
+    // const receipt = await myContract.methods.setData(3).send({ from: address });
+    // console.log(`Transaction hash: ${receipt.transactionHash}`);
+    // console.log(`New data value: ${await myContract.methods.data().call()}`);
     return myContract;
   };
   deploy();
