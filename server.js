@@ -76,7 +76,7 @@ async function deploy (){
     // console.log(`New data value: ${await myContract.methods.data().call()}`);
     return myContract;
   };
-  deploy();
+  myContract=deploy();
 
 // This function generates a QR code
 function generateQRCode() {
@@ -236,7 +236,6 @@ app.post('/retailerSignup',async (req, res) => {
 
 // Add retailer to Blockchain
 async function createRetailer(retailerHashedEmail, retailerName, retailerLocation) {
-    var myContract=await deploy();
     return await myContract.methods.createRetailer(retailerHashedEmail, retailerName, retailerLocation).send({from: address, gas: 3000000});
 }
 
