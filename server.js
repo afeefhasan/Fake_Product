@@ -47,15 +47,6 @@ app.use(bodyParser.urlencoded({
 
 const content = fs.readFileSync(pathToContract, 'utf8');
 
-const input = {
-  language: 'Solidity',
-  sources: {
-    'contract': { content }
-  },
-  settings: {
-    outputSelection: { '*': { '*': ['*'] } }
-  }
-};
 
 const provider = new Provider(privatekey, infuraURL );
 var web3 = new Web3(provider);
@@ -71,7 +62,7 @@ async function deploy (){
   
   
     // console.log(`Old data value: ${await myContract.methods.data().call()}`);
-    // const receipt = await myContract.methods.setData(3).send({ from: address });
+    // const receipt = await myContract.methods.setData(9).send({ from: address });
     // console.log(`Transaction hash: ${receipt.transactionHash}`);
     // console.log(`New data value: ${await myContract.methods.data().call()}`);
     return myContract;
@@ -153,8 +144,9 @@ catch(err){
 });
 
 // Add the user in Blockchain
-function createCustomer(hashedEmail, name, phone) {
-    return myContract.methods.createCustomer(hashedEmail, name, phone).send({from: address, gas: 3000000});
+async function createCustomer(hashedEmail, name, phone) {
+    const myContract = await deploy();
+    return await myContract.methods.createCustomer(hashedEmail, name, phone).send({from: address, gas: 3000000});
 }
 
 
@@ -236,6 +228,7 @@ app.post('/retailerSignup',async (req, res) => {
 
 // Add retailer to Blockchain
 async function createRetailer(retailerHashedEmail, retailerName, retailerLocation) {
+    const myContract = await deploy();
     return await myContract.methods.createRetailer(retailerHashedEmail, retailerName, retailerLocation).send({from: address, gas: 3000000});
 }
 
@@ -528,12 +521,10 @@ app.post('/buyerConfirm',async (req, res) => {
                     var ok;
                     if(QRCodes[i]['retailer'] === '1'){
                         console.log('Performing transaction for retailer\n');
-                        ok =await myContract.methods.initialOwner(code, hashedSellerEmail, hashedBuyerEmail,
-                                                        { from: web3.eth.accounts[0], gas: 3000000 });
+                        ok =await myContract.methods.initialOwner(code, hashedSellerEmail, hashedBuyerEmail).send({from:address, gas: 3000000});
                     } else {
                         console.log('Performing transaction for customer\n');
-                        ok =await  myContract.methods.changeOwner(code, hashedSellerEmail, hashedBuyerEmail,
-                                                        { from: web3.eth.accounts[0], gas: 3000000 });
+                        ok =await  myContract.methods.changeOwner(code, hashedSellerEmail, hashedBuyerEmail).send({from:address, gas: 3000000});
                     }
                     if (!ok) {
                         return res.status(400).send('Error');
@@ -550,17 +541,6 @@ app.post('/buyerConfirm',async (req, res) => {
     return res.status(400).send('Product not found');
 });
 
-// Function that creates an initial owner for a product
-function initialOwner(code, retailerHashedEmail, customerHashedEmail) {
-    return myContract.methods.initialOwner(code, retailerHashedEmail, customerHashedEmail,
-                                        { from: web3.eth.accounts[0], gas: 3000000 });
-}
-
-// Function that creates transfers ownership of a product
-function changeOwner(code, oldOwnerHashedEmail, newOwnerHashedEmail) {
-    return myContract.methods.changeOwner(code, oldOwnerHashedEmail, newOwnerHashedEmail,
-                                        { from: web3.eth.accounts[0], gas: 3000000 });
-}
 
 
 /**
