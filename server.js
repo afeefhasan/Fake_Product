@@ -1,5 +1,7 @@
+'use strict';
 const express = require('express');
 const app = express();
+const serverless = require('serverless-http');
 // const session = require('express-session');
 const path = require('path');
 const solc = require('solc');
@@ -18,7 +20,7 @@ const address="0xA33677B171F5e419884505e9e4e67165EcF0C9Fc";
 const privatekey="exchange cabbage someone alley vague short village toss recall visa corn gold";
 const infuraURL="https://rinkeby.infura.io/v3/4ab70f9d52854f799be42c232951a760"
 const MyContract = require('./build/contracts/MyContract.json');
-
+const router = express.Router();
 
 //connect to mongoDB
 const uri='mongodb+srv://AuthProduct:eAiucg9T8yfxQSFa@cluster0.ifzch.mongodb.net/Products_Auth?retryWrites=true&w=majority';
@@ -82,19 +84,18 @@ function hashMD5(email) {
 // Routes for webpages
 app.use(express.static(__dirname + '/views'));
 app.use(express.static(__dirname + '/views/davidshimjs-qrcodejs-04f46c6'));
-
 // Manufacturer generates a QR Code here
-app.get('/createCodes', (req, res) => {
+router.get('/createCodes', (req, res) => {
     res.sendFile('views/createCodes.html', { root: __dirname });
 });
 
 // Creating a new retailer
-app.get('/createRetailer', (req, res) => {
+router.get('/createRetailer', (req, res) => {
     res.sendFile('views/createRetailer.html', { root: __dirname });
 });
 
 // Main website which has 2 routers - manufacturer & retailer
-app.get('/', (req, res) => {
+router.get('/', (req, res) => {
     res.sendFile('views/index.html', { root: __dirname });
 });
 
@@ -105,7 +106,7 @@ app.get('/', (req, res) => {
  * Send:        JSON object which contains name, email, password, phone
  * Receive:     200 if successful, 400 otherwise
  */
-app.post('/signUp', async(req, res) => {
+ router.post('/signUp', async(req, res) => {
 	try{
     console.log('Request to /signUp\n');
     let {name,email,password,phone} = req.body;
@@ -156,7 +157,7 @@ async function createCustomer(hashedEmail, name, phone) {
  * Send:        JSON object which contains email, password
  * Receive:     200 if successful, 400 otherwise
  */
-app.post('/login',async (req, res) => {
+ router.post('/login',async (req, res) => {
 	try{
     console.log('Request to /login\n');
     let email = req.body.email;
@@ -189,7 +190,7 @@ app.post('/login',async (req, res) => {
  * Send:        JSON object which contains name, email, password, location
  * Receive:     200 if successful, 400 otherwise
  */
-app.post('/retailerSignup',async (req, res) => {
+ router.post('/retailerSignup',async (req, res) => {
 	try{
     console.log('Request to /retailerSignup\n');
     let retailerEmail = req.body.email;
@@ -239,7 +240,7 @@ async function createRetailer(retailerHashedEmail, retailerName, retailerLocatio
  * Send:        JSON object which contains email, password
  * Receive:     200 if successful, 400 otherwise
  */
-app.post('/retailerLogin', async(req, res) => {
+ router.post('/retailerLogin', async(req, res) => {
 	try{
     console.log('Request to /retailerLogin\n');
     let retailerEmail = req.body.email;
@@ -269,7 +270,7 @@ app.post('/retailerLogin', async(req, res) => {
  * Send:
  * Receive:     JSON object of retailer details if successful, 400 otherwise
  */
-app.get('/retailerDetails',async (req, res) => {
+ router.get('/retailerDetails',async (req, res) => {
 	try{
 
 	let retailer = await RetailerSchema.find({password:0});
@@ -292,7 +293,7 @@ app.get('/retailerDetails',async (req, res) => {
  * Send:        JSON object which contains code, email
  * Receive:     200 if successful, 400 otherwise
  */
-app.post('/addRetailerToCode', async(req, res) => {
+ router.post('/addRetailerToCode', async(req, res) => {
     var myContract=await deploy();
     console.log('Request to /addRetailerToCode\n');
     let code = req.body.code;
@@ -315,7 +316,7 @@ app.post('/addRetailerToCode', async(req, res) => {
  * Receive:     JSON array of objects which contain brand, model, description, status, manufacturerName,manufacturerLocation,
  *                                                  manufacturerTimestamp, retailerName, retailerLocation, retailerTimestamp
  */
-app.post('/myAssets', async(req, res) => {
+ router.post('/myAssets', async(req, res) => {
     var myContract=await deploy();
     console.log('Request to /myAssets\n');
     let myAssetsArray = [];
@@ -346,7 +347,7 @@ app.post('/myAssets', async(req, res) => {
  * Send:        JSON object which contains code, email
  * Receive:     200 if product status was changed, 400 otherwise.
  */
-app.post('/stolen',async (req, res) => {
+ router.post('/stolen',async (req, res) => {
     var myContract=await deploy();
     console.log('Request to /stolen\n');
     let code = req.body.code;
@@ -372,7 +373,7 @@ const QRCodes = [];
  * Send:        JSON object which contains code, sellerEmail
  * Receive:     List of QR Codes owned by the seller if successful, 400 otherwise
  */
-app.post('/sell', (req, res) => {
+ router.post('/sell', (req, res) => {
     console.log('Request to /sell\n');
     let code = req.body.code;
     let sellerEmail = req.body.email;
@@ -396,7 +397,7 @@ app.post('/sell', (req, res) => {
  * Send:        JSON object which contains QRCode, email
  * Receive:     200 if successful, 400 otherwise
  */
-app.post('/buy', (req, res) => {
+ router.post('/buy', (req, res) => {
     console.log('Request to /buy\n');
     let QRCode = req.body.QRCode;
     let buyerEmail = req.body.email;
@@ -427,7 +428,7 @@ app.post('/buy', (req, res) => {
  * Receive:     JSON object whcih contains brand, model, description, status, manufacturerName, manufacturerLocation,
  *                                         manufacturerTimestamp, retailerName, retailerLocation, retailerTimestamp
  */
-app.post('/getProductDetails',async (req, res) => {
+ router.post('/getProductDetails',async (req, res) => {
     var myContract=await deploy();
     console.log('Request to /getProductDetails\n');
     let code = req.body.code;
@@ -466,7 +467,7 @@ app.post('/getProductDetails',async (req, res) => {
  * Send:        JSON object which contains email, QRCode, retailer
  * Receive:     200 if successful, 400 otherwise
  */
-app.post('/sellerConfirm', async(req, res) => {
+ router.post('/sellerConfirm', async(req, res) => {
     var myContract=await deploy();
     console.log('Request to /sellerConfirm\n');
     let sellerEmail = req.body.email;
@@ -502,7 +503,7 @@ app.post('/sellerConfirm', async(req, res) => {
  * Send:        JSON object which contains email, QRCode
  * Receive:     200 if successful, 400 otherwise
  */
-app.post('/buyerConfirm',async (req, res) => {
+ router.post('/buyerConfirm',async (req, res) => {
     var myContract=await deploy();
     console.log('Request made to /buyerConfirm\n');
     let buyerEmail = req.body.email;
@@ -549,7 +550,7 @@ app.post('/buyerConfirm',async (req, res) => {
  * Send:        JSON object which contains code
  * Receive:     JSON object which has productDetails
  */
-app.post('/scan',async (req, res) => {
+ router.post('/scan',async (req, res) => {
     var myContract=await deploy();
     console.log('Request made to /scan\n');
     let code = req.body.code;
@@ -570,7 +571,7 @@ app.post('/scan',async (req, res) => {
  * Send:        JSON object which contains brand, model, status, description, manufacturerName, manufacturerLocation
  * Receive:     200 if QR code was generated, 400 otherwise.
  */
-app.post('/QRCodeForManufacturer',async (req, res) => {
+ router.post('/QRCodeForManufacturer',async (req, res) => {
     var myContract=await deploy();
     console.log('Request to /QRCodeForManufacturer\n');
     let brand = req.body.brand;
@@ -607,7 +608,7 @@ app.post('/QRCodeForManufacturer',async (req, res) => {
  * Send:        JSON object which contains email
  * Receive:     JSON object which contains name, phone
  */
-app.get('/getCustomerDetails', async(req, res) => {
+ router.get('/getCustomerDetails', async(req, res) => {
     console.log('Request to /getCustomerDetails\n');
     var myContract=await deploy();
     let email = req.body.email;
@@ -620,7 +621,7 @@ app.get('/getCustomerDetails', async(req, res) => {
     res.status(200).send(JSON.parse(JSON.stringify(customerDetailsObj)));
 });
 
+app.use('/.netlify/functions/server', router);
+module.exports = app;
+module.exports.handler = serverless(app);
 // Server start
-app.listen(port, (req, res) => {
-    console.log(`Listening to port ${port}...\n`);
-});
