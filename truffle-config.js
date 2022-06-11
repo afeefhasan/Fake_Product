@@ -1,6 +1,6 @@
 const Provider = require('@truffle/hdwallet-provider');
-const address = '0xA33677B171F5e419884505e9e4e67165EcF0C9Fc';
-const privateKey = 'exchange cabbage someone alley vague short village toss recall visa corn gold';
+const address = process.env.ADDRESS;
+const privateKey = process.env.PRIVATEKEY;
 
 const provider = new Provider(privateKey, "https://rinkeby.infura.io/v3/4ab70f9d52854f799be42c232951a760"); 
 
