@@ -8,16 +8,16 @@
     "bcryptjs": "^2.4.3",
     "crypto": "^1.0.1",
     "debug": "^4.1.1",
+    "dotenv": "^16.0.1",
     "express": "^4.17.3",
     "mongoose": "^6.2.6",
     "netlify-lambda": "^2.0.15",
     "passport": "^0.4.0",
-    "redis": "^2.8.0",
+    "redis": "^4.1.0",
     "serverless-http": "^3.0.1",
-    "socket.io": "^2.2.0",
+    "socket.io": "^4.5.1",
     "solc": "^0.8.13",
     "web3": "^1.7.1"
-
   },
   "scripts": {
     "build": "netlify-lambda build functions",

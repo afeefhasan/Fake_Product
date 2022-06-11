@@ -2,6 +2,7 @@
 const express = require('express');
 const app = express();
 const serverless = require('serverless-http');
+require('dotenv').config()
 // const session = require('express-session');
 const path = require('path');
 const solc = require('solc');
